@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+requests
+catboost
+numpy
+pandas
+rapidfuzz
