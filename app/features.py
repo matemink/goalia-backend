@@ -1,5 +1,6 @@
-from app.team_matcher import match_team
 import json
+
+from app.team_matcher import match_team
 
 # load mappings once
 team_map = json.load(open("app/mappings/team_mapping.json"))
@@ -8,8 +9,8 @@ league_map = json.load(open("app/mappings/league_mapping.json"))
 
 def build_features(match: dict):
     """
-    Converts API match → ML feature vector
-    Safe matching with fuzzy + validation
+    Converts API match into the same 3-feature vector used in training:
+    [home_team_enc, away_team_enc, league_enc]
     """
 
     home_raw = match["homeTeam"]["name"]
@@ -20,26 +21,13 @@ def build_features(match: dict):
     home_name = match_team(home_raw)
     away_name = match_team(away_raw)
 
-    # fallback if not matched
+    # fallback to 0 for unknown mapping values
     home_id = team_map.get(home_name, 0) if home_name else 0
     away_id = team_map.get(away_name, 0) if away_name else 0
-
     league_id = league_map.get(league_raw, 0)
 
-    # feature vector must match training order
     return [
-        home_id,
-        away_id,
-        league_id,
-
-        # rolling stats placeholders
-        0.0,  # home_avg_scored
-        0.0,  # home_avg_conceded
-        0.0,  # home_winrate
-        0.0,  # home_goal_diff_form
-
-        0.0,  # away_avg_scored
-        0.0,  # away_avg_conceded
-        0.0,  # away_winrate
-        0.0   # away_goal_diff_form
+        float(home_id),
+        float(away_id),
+        float(league_id),
     ]
