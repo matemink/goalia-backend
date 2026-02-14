@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 
 from app.cache import last_updated, matches_cache
+from app.predictor import enrich_matches_with_predictions
 
 API_TOKEN = os.getenv("FOOTBALL_TOKEN")
 CACHE_FILE = Path("app/data/matches_cache.json")
@@ -75,6 +76,8 @@ def get_matches_with_cache(ttl_seconds: int, force_refresh: bool = False) -> dic
 
         if not updated and not matches_cache:
             _load_cache_from_disk()
+
+    enrich_matches_with_predictions(matches_cache)
 
     return {
         "source": "cache" if last_updated["value"] and now - last_updated["value"] <= ttl_seconds else "stale-cache",

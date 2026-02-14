@@ -1,24 +1,33 @@
+from __future__ import annotations
+
+
 from catboost import CatBoostClassifier
-import json
-from app.cache import predictions_cache
+
 from app.features import build_features
 
+MODEL_PATH = "app/models/goalia_catboost.cbm"
+RESULT_LABELS = ["H", "D", "A"]
 model = CatBoostClassifier()
-model.load_model("app/models/goalia_catboost.cbm")
+model.load_model(MODEL_PATH)
 
-team_map = json.load(open("app/mappings/team_mapping.json"))
-league_map = json.load(open("app/mappings/league_mapping.json"))
 
-def predict_matches(matches):
-    predictions_cache.clear()
+def predict_match(match: dict) -> dict:
+    features = [build_features(match)]
+    probs = model.predict_proba(features)[0]
+    winner_idx = int(max(range(len(probs)), key=lambda i: probs[i]))
 
-    for m in matches:
-        x = [build_features(m, team_map, league_map)]
-        probs = model.predict_proba(x)[0]
+    return {
+        "label": RESULT_LABELS[winner_idx],
+        "confidence": float(probs[winner_idx]),
+        "probabilities": {
+            "H": float(probs[0]),
+            "D": float(probs[1]),
+            "A": float(probs[2]),
+        },
+    }
 
-        predictions_cache[m["id"]] = {
-            "home": float(probs[0]),
-            "draw": float(probs[1]),
-            "away": float(probs[2]),
-            "confidence": float(max(probs))
-        }
+
+def enrich_matches_with_predictions(matches: list[dict]) -> list[dict]:
+    for match in matches:
+        match["prediction"] = predict_match(match)
+    return matches
