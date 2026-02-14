@@ -7,6 +7,7 @@ team_map = json.load(open("app/mappings/team_mapping.json"))
 TEAM_NAMES = list(team_map.keys())
 CACHE = {}
 NORMALIZED_NAME_TO_TEAMS = {}
+TOKEN_TO_TEAMS = {}
 
 SIM_THRESHOLD = 80
 STOP_WORDS = {"fc", "cf", "sc", "afc", "cfc", "club", "the"}
@@ -25,8 +26,25 @@ MANUAL_ALIASES = {
 
 def _normalize_team_name(name: str) -> str:
     lowered = re.sub(r"[^a-z0-9\s]", " ", name.lower())
+    raw_tokens = lowered.split()
+
+    # Join dot-split abbreviations (e.g. "F.C." -> "fc", "R.C." -> "rc")
+    # so existing stop words and aliases can match reliably.
+    merged_tokens = []
+    i = 0
+    while i < len(raw_tokens):
+        if len(raw_tokens[i]) == 1:
+            letters = []
+            while i < len(raw_tokens) and len(raw_tokens[i]) == 1:
+                letters.append(raw_tokens[i])
+                i += 1
+            merged_tokens.append("".join(letters))
+            continue
+        merged_tokens.append(raw_tokens[i])
+        i += 1
+
     tokens = []
-    for token in lowered.split():
+    for token in merged_tokens:
         if token in STOP_WORDS:
             continue
         tokens.append(TOKEN_ALIASES.get(token, token))
@@ -36,6 +54,8 @@ def _normalize_team_name(name: str) -> str:
 for team in TEAM_NAMES:
     normalized = _normalize_team_name(team)
     NORMALIZED_NAME_TO_TEAMS.setdefault(normalized, []).append(team)
+    for token in set(normalized.split()):
+        TOKEN_TO_TEAMS.setdefault(token, set()).add(team)
 
 
 def match_team(name: str) -> str:
@@ -55,6 +75,14 @@ def match_team(name: str) -> str:
     if name in team_map:
         CACHE[normalized_name] = name
         return name
+
+    # Avoid mapping generic single-token city names (e.g. "Paris")
+    # when that token belongs to multiple teams.
+    parts = normalized_name.split()
+    if len(parts) == 1:
+        token_matches = TOKEN_TO_TEAMS.get(parts[0], set())
+        if len(token_matches) > 1:
+            return None
 
     normalized_exact = NORMALIZED_NAME_TO_TEAMS.get(normalized_name)
     if normalized_exact and len(normalized_exact) == 1:
