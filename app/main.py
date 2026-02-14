@@ -1,45 +1,24 @@
-import time
-from fastapi import FastAPI
-from app.fetcher import update_data
-from app.cache import matches_cache, predictions_cache
+from fastapi import FastAPI, Query
+
+from app.fetcher import get_matches_with_cache
 
 app = FastAPI()
 
-# ===== CACHE SETTINGS =====
-CACHE_TTL = 60  # seconds
-last_update = 0
+CACHE_TTL = 300  # 5 minutes
 
 
-# ===== STARTUP LOAD =====
-@app.on_event("startup")
-def startup():
-    global last_update
-    update_data()
-    last_update = time.time()
-
-
-# ===== MAIN ENDPOINT =====
 @app.get("/api/matches")
-def get_matches():
-    global last_update
-
-    # refresh cache if expired
-    if time.time() - last_update > CACHE_TTL:
-        update_data()
-        last_update = time.time()
-
-    return {
-        "matches": matches_cache,
-        "predictions": predictions_cache
-    }
+def get_matches(force_refresh: bool = Query(False, description="Ignore TTL and refresh from external API")):
+    return get_matches_with_cache(ttl_seconds=CACHE_TTL, force_refresh=force_refresh)
 
 
-# ===== HEALTH CHECK =====
 @app.get("/")
 def health():
+    result = get_matches_with_cache(ttl_seconds=CACHE_TTL)
     return {
         "status": "ok",
-        "cached_matches": len(matches_cache),
-        "cached_predictions": len(predictions_cache),
-        "last_update_seconds_ago": int(time.time() - last_update)
+        "cache_ttl_seconds": CACHE_TTL,
+        "cached_matches": len(result["matches"]),
+        "cached_at": result["cached_at"],
+        "source": result["source"],
     }
