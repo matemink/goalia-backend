@@ -6,6 +6,7 @@ from app.features import build_features
 
 MODEL_PATH = "app/models/goalia_catboost.cbm"
 RESULT_LABELS = ["H", "D", "A"]
+UNKNOWN_FEATURE_ID = -1.0
 model = CatBoostClassifier()
 model.load_model(MODEL_PATH)
 
@@ -14,8 +15,8 @@ def predict_match(match: dict) -> dict | None:
     match_features = build_features(match)
 
     # Skip prediction when at least one encoded feature is unknown.
-    # Unknown teams/leagues are encoded as 0 in build_features.
-    if any(feature == 0.0 for feature in match_features):
+    # Unknown teams/leagues are encoded as -1 in build_features.
+    if any(feature == UNKNOWN_FEATURE_ID for feature in match_features):
         return None
 
     features = [match_features]

@@ -10,6 +10,7 @@ team_map = json.load(open("app/mappings/team_mapping.json"))
 league_map = json.load(open("app/mappings/league_mapping.json"))
 
 LEAGUE_SIM_THRESHOLD = 85
+UNKNOWN_FEATURE_ID = -1
 LEAGUE_STOP_WORDS = {"liga", "league", "division", "div", "the"}
 LEAGUE_ALIASES = {
     "primeira": "portugal",
@@ -83,11 +84,15 @@ def build_features(match: dict):
     home_name = match_team(home_raw)
     away_name = match_team(away_raw)
 
-    # fallback to 0 for unknown mapping values
-    home_id = team_map.get(home_name, 0) if home_name else 0
-    away_id = team_map.get(away_name, 0) if away_name else 0
+    # fallback to -1 for unknown mapping values
+    home_id = team_map.get(home_name, UNKNOWN_FEATURE_ID) if home_name else UNKNOWN_FEATURE_ID
+    away_id = team_map.get(away_name, UNKNOWN_FEATURE_ID) if away_name else UNKNOWN_FEATURE_ID
     resolved_league = _resolve_league_name(league_raw)
-    league_id = league_map.get(resolved_league, 0) if resolved_league else 0
+    league_id = (
+        league_map.get(resolved_league, UNKNOWN_FEATURE_ID)
+        if resolved_league
+        else UNKNOWN_FEATURE_ID
+    )
 
     return [
         float(home_id),
