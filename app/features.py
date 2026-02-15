@@ -15,6 +15,7 @@ LEAGUE_ALIASES = {
     "primeira": "portugal",
 }
 MANUAL_LEAGUE_ALIASES = {
+    "primera": "La Liga",
     "primeira liga": "Liga Portugal",
 }
 
