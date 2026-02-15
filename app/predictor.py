@@ -10,8 +10,15 @@ model = CatBoostClassifier()
 model.load_model(MODEL_PATH)
 
 
-def predict_match(match: dict) -> dict:
-    features = [build_features(match)]
+def predict_match(match: dict) -> dict | None:
+    match_features = build_features(match)
+
+    # Skip prediction when at least one encoded feature is unknown.
+    # Unknown teams/leagues are encoded as 0 in build_features.
+    if any(feature == 0.0 for feature in match_features):
+        return None
+
+    features = [match_features]
     probs = model.predict_proba(features)[0]
     winner_idx = int(max(range(len(probs)), key=lambda i: probs[i]))
 
@@ -28,5 +35,10 @@ def predict_match(match: dict) -> dict:
 
 def enrich_matches_with_predictions(matches: list[dict]) -> list[dict]:
     for match in matches:
-        match["prediction"] = predict_match(match)
+        prediction = predict_match(match)
+        if prediction is None:
+            match.pop("prediction", None)
+            continue
+
+        match["prediction"] = prediction
     return matches
