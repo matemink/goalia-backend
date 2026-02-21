@@ -22,6 +22,11 @@ MANUAL_ALIASES = {
     "paris saint germain": "Paris SG",
     "internazionale milano": "Inter",
     "nec": "Nijmegen",
+    "queens park rangers": "QPR",
+    "qwwns park rangers": "QPR",
+    "sporting clube de portugal": "Sp Lisbon",
+    "vitoria": "Guimaraes",
+    "avs": "Aves",
 }
 
 
