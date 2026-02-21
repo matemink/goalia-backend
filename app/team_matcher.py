@@ -20,6 +20,12 @@ TOKEN_ALIASES = {
 MANUAL_ALIASES = {
     "psg": "Paris SG",
     "paris saint germain": "Paris SG",
+    "internazionale milano": "Inter",
+    "nec": "Nijmegen",
+    "qwwns park rangers": "Queens Park",
+    "sporting clube de portugal": "Sp Lisbon",
+    "avs": "Aves",
+    "vitoria": "Guimaraes",
 }
 
 
