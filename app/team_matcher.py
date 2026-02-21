@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from rapidfuzz import process, fuzz
 
 team_map = json.load(open("app/mappings/team_mapping.json"))
@@ -32,7 +33,8 @@ MANUAL_ALIASES = {
 
 
 def _normalize_team_name(name: str) -> str:
-    lowered = re.sub(r"[^a-z0-9\s]", " ", name.lower())
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    lowered = re.sub(r"[^a-z0-9\s]", " ", ascii_name.lower())
     raw_tokens = lowered.split()
 
     # Join dot-split abbreviations (e.g. "F.C." -> "fc", "R.C." -> "rc")
