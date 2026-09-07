@@ -21,7 +21,10 @@ MANUAL_LEAGUE_ALIASES = {
 }
 
 
-def _normalize_league_name(name: str) -> str:
+def _normalize_league_name(name: str | None) -> str:
+    if not name:
+        return ""
+
     lowered = re.sub(r"[^a-z0-9\s]", " ", name.lower())
     tokens = []
     for token in lowered.split():
@@ -37,7 +40,10 @@ for league_name in league_map:
     NORMALIZED_LEAGUE_TO_NAMES.setdefault(normalized, []).append(league_name)
 
 
-def _resolve_league_name(league_raw: str) -> str | None:
+def _resolve_league_name(league_raw: str | None) -> str | None:
+    if not league_raw:
+        return None
+
     if league_raw in league_map:
         return league_raw
 
@@ -76,9 +82,9 @@ def build_features(match: dict):
     [home_team_enc, away_team_enc, league_enc]
     """
 
-    home_raw = match["homeTeam"]["name"]
-    away_raw = match["awayTeam"]["name"]
-    league_raw = match["competition"]["name"]
+    home_raw = match.get("homeTeam", {}).get("name")
+    away_raw = match.get("awayTeam", {}).get("name")
+    league_raw = match.get("competition", {}).get("name")
 
     # resolve team names safely
     home_name = match_team(home_raw)
