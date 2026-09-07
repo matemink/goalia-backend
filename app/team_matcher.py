@@ -32,7 +32,10 @@ MANUAL_ALIASES = {
 
 
 
-def _normalize_team_name(name: str) -> str:
+def _normalize_team_name(name: str | None) -> str:
+    if not name:
+        return ""
+
     ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
     lowered = re.sub(r"[^a-z0-9\s]", " ", ascii_name.lower())
     raw_tokens = lowered.split()
@@ -67,9 +70,11 @@ for team in TEAM_NAMES:
         TOKEN_TO_TEAMS.setdefault(token, set()).add(team)
 
 
-def match_team(name: str) -> str:
+def match_team(name: str | None) -> str | None:
 
     normalized_name = _normalize_team_name(name)
+    if not normalized_name:
+        return None
 
     alias_match = MANUAL_ALIASES.get(normalized_name)
     if alias_match:
