@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Goalia Backend · Match request architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "output": "docs/diagrams/overview.html",
+    "repository": {
+      "url": "https://github.com/matemink/goalia-backend.git",
+      "revision": "cfa7e4a3d05292f04baeffda1d86d9284bfc0812",
+      "provider": "github",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "clients",
+      "type": "external",
+      "label": "HTTP clients",
+      "sublabel": "Goalia KMP / API consumers",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 1,
+          "end_line": 5
+        },
+        {
+          "path": "app/main.py",
+          "line": 9,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI endpoint",
+      "sublabel": "GET /api/matches",
+      "pos": [
+        430,
+        100
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "app/main.py",
+          "line": 1,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "fetcher",
+      "type": "backend",
+      "label": "Cache + fetch coordinator",
+      "sublabel": "In-memory matches + fallback",
+      "pos": [
+        430,
+        350
+      ],
+      "size": [
+        220,
+        88
+      ],
+      "sources": [
+        {
+          "path": "app/fetcher.py",
+          "line": 60,
+          "end_line": 86
+        },
+        {
+          "path": "app/fetcher.py",
+          "line": 21,
+          "end_line": 57
+        },
+        {
+          "path": "app/cache.py",
+          "line": 1,
+          "end_line": 5
+        }
+      ]
+    },
+    {
+      "id": "upstream",
+      "type": "external",
+      "label": "football-data.org",
+      "sublabel": "Requires FOOTBALL_TOKEN",
+      "pos": [
+        40,
+        350
+      ],
+      "size": [
+        220,
+        88
+      ],
+      "sources": [
+        {
+          "path": "app/fetcher.py",
+          "line": 11,
+          "end_line": 14
+        },
+        {
+          "path": "app/fetcher.py",
+          "line": 44,
+          "end_line": 57
+        }
+      ]
+    },
+    {
+      "id": "cachefile",
+      "type": "external",
+      "label": "Raw match cache file",
+      "sublabel": "matches_cache.json",
+      "pos": [
+        820,
+        350
+      ],
+      "size": [
+        220,
+        88
+      ],
+      "sources": [
+        {
+          "path": "app/fetcher.py",
+          "line": 12,
+          "end_line": 41
+        },
+        {
+          "path": "app/fetcher.py",
+          "line": 52,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "prediction",
+      "type": "backend",
+      "label": "Prediction enrichment",
+      "sublabel": "Encode IDs · skip unknowns",
+      "pos": [
+        430,
+        620
+      ],
+      "size": [
+        220,
+        88
+      ],
+      "sources": [
+        {
+          "path": "app/predictor.py",
+          "line": 14,
+          "end_line": 45
+        },
+        {
+          "path": "app/features.py",
+          "line": 79,
+          "end_line": 107
+        }
+      ]
+    },
+    {
+      "id": "modelfiles",
+      "type": "external",
+      "label": "Model + mapping files",
+      "sublabel": "CatBoost .cbm + JSON IDs",
+      "pos": [
+        820,
+        620
+      ],
+      "size": [
+        220,
+        88
+      ],
+      "sources": [
+        {
+          "path": "app/predictor.py",
+          "line": 7,
+          "end_line": 11
+        },
+        {
+          "path": "app/features.py",
+          "line": 1,
+          "end_line": 10
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "matches-request",
+      "from": "clients",
+      "to": "api",
+      "label": "GET /api/matches",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-policy",
+      "from": "api",
+      "to": "fetcher",
+      "label": "TTL 300s / force_refresh"
+    },
+    {
+      "id": "upstream-refresh",
+      "from": "fetcher",
+      "to": "upstream",
+      "label": "Expired / forced",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "disk-cache",
+      "from": "fetcher",
+      "to": "cachefile",
+      "label": "Read / write JSON"
+    },
+    {
+      "id": "enrich-response",
+      "from": "fetcher",
+      "to": "prediction",
+      "label": "Enrich every request"
+    },
+    {
+      "id": "load-predictor-files",
+      "from": "prediction",
+      "to": "modelfiles",
+      "label": "Load on import"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Request-time refresh",
+      "items": [
+        "Fresh cache avoids an upstream refresh unless force_refresh is set.",
+        "Missing token or failed refresh retains cached data when available."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Prediction ownership",
+      "items": [
+        "The disk file stores raw upstream matches.",
+        "Enrichment runs on each response; unknown team or league IDs omit prediction."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Runtime shape",
+      "items": [
+        "Cache state is process-local; the fallback is a JSON file.",
+        "CatBoost model and mapping files are loaded at import time."
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "FastAPI service · Python process",
+      "wraps": [
+        "api",
+        "fetcher",
+        "prediction"
+      ],
+      "pad": 32
+    }
+  ]
+}

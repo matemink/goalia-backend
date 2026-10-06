@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+
+# Local architecture generation receipts
+.archify/
+docs/diagrams/*.delivery.json
